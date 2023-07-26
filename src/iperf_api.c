@@ -3206,6 +3206,9 @@ iperf_reset_test(struct iperf_test *test)
 	free(t->line);
 	free(t);
     }
+#if defined(HAVE_SO_BINDTODEVICE)    
+    iperf_device_reset();
+#endif
 }
 
 
@@ -3519,12 +3522,24 @@ iperf_print_intermediate(struct iperf_test *test)
                         /* Interval sum, TCP with retransmits. */
                         if (test->json_output)
                             cJSON_AddItemToObject(json_interval, sum_name, iperf_json_printf("start: %f  end: %f  seconds: %f  bytes: %d  bits_per_second: %f  retransmits: %d  omitted: %b sender: %b", (double) start_time, (double) end_time, (double) irp->interval_duration, (int64_t) bytes, bandwidth * 8, (int64_t) retransmits, irp->omitted, stream_must_be_sender)); /* XXX irp->omitted or test->omitting? */
+                        else if (test->bind_dev) {
+                            char dubuf[UNIT_LEN];
+                            char dnbuf[UNIT_LEN];
+                            device_unit_snprintf(test, sp->sender, irp->interval_duration, dubuf, dnbuf);
+                            iperf_printf(test, report_sum_bw_retrans_format_dev, mbuf, start_time, end_time, ubuf, nbuf, dubuf, dnbuf, retransmits, irp->omitted?report_omitted:""); /* XXX irp->omitted or test->omitting? */
+                        }
                         else
                             iperf_printf(test, report_sum_bw_retrans_format, mbuf, start_time, end_time, ubuf, nbuf, retransmits, irp->omitted?report_omitted:""); /* XXX irp->omitted or test->omitting? */
                     } else {
                         /* Interval sum, TCP without retransmits. */
                         if (test->json_output)
                             cJSON_AddItemToObject(json_interval, sum_name, iperf_json_printf("start: %f  end: %f  seconds: %f  bytes: %d  bits_per_second: %f  omitted: %b sender: %b", (double) start_time, (double) end_time, (double) irp->interval_duration, (int64_t) bytes, bandwidth * 8, test->omitting, stream_must_be_sender));
+                        else if (test->bind_dev) {
+                            char dubuf[UNIT_LEN];
+                            char dnbuf[UNIT_LEN];
+                            device_unit_snprintf(test, sp->sender, irp->interval_duration, dubuf, dnbuf);
+                            iperf_printf(test, report_sum_bw_format_dev, mbuf, start_time, end_time, ubuf, nbuf, dubuf, dnbuf, test->omitting?report_omitted:"");
+                        }
                         else
                             iperf_printf(test, report_sum_bw_format, mbuf, start_time, end_time, ubuf, nbuf, test->omitting?report_omitted:"");
                     }
@@ -3533,6 +3548,12 @@ iperf_print_intermediate(struct iperf_test *test)
                     if (stream_must_be_sender) {
                         if (test->json_output)
                             cJSON_AddItemToObject(json_interval, sum_name, iperf_json_printf("start: %f  end: %f  seconds: %f  bytes: %d  bits_per_second: %f  packets: %d  omitted: %b sender: %b", (double) start_time, (double) end_time, (double) irp->interval_duration, (int64_t) bytes, bandwidth * 8, (int64_t) total_packets, test->omitting, stream_must_be_sender));
+                        else if (test->bind_dev) {
+                            char dubuf[UNIT_LEN];
+                            char dnbuf[UNIT_LEN];
+                            device_unit_snprintf(test, sp->sender, irp->interval_duration, dubuf, dnbuf);
+                            iperf_printf(test, report_sum_bw_udp_sender_format_dev, mbuf, start_time, end_time, ubuf, nbuf, dubuf, dnbuf, zbuf, total_packets, test->omitting?report_omitted:"");
+                        }
                         else
                             iperf_printf(test, report_sum_bw_udp_sender_format, mbuf, start_time, end_time, ubuf, nbuf, zbuf, total_packets, test->omitting?report_omitted:"");
                     } else {
@@ -3545,6 +3566,12 @@ iperf_print_intermediate(struct iperf_test *test)
                         }
                         if (test->json_output)
                             cJSON_AddItemToObject(json_interval, sum_name, iperf_json_printf("start: %f  end: %f  seconds: %f  bytes: %d  bits_per_second: %f  jitter_ms: %f  lost_packets: %d  packets: %d  lost_percent: %f  omitted: %b sender: %b", (double) start_time, (double) end_time, (double) irp->interval_duration, (int64_t) bytes, bandwidth * 8, (double) avg_jitter * 1000.0, (int64_t) lost_packets, (int64_t) total_packets, (double) lost_percent, test->omitting, stream_must_be_sender));
+                        else if (test->bind_dev) {
+                            char dubuf[UNIT_LEN];
+                            char dnbuf[UNIT_LEN];
+                            device_unit_snprintf(test, sp->sender, irp->interval_duration, dubuf, dnbuf);
+                            iperf_printf(test, report_sum_bw_udp_format_dev, mbuf, start_time, end_time, ubuf, nbuf, dubuf, dnbuf, avg_jitter * 1000.0, lost_packets, total_packets, lost_percent, test->omitting?report_omitted:"");
+                        }
                         else
                             iperf_printf(test, report_sum_bw_udp_format, mbuf, start_time, end_time, ubuf, nbuf, avg_jitter * 1000.0, lost_packets, total_packets, lost_percent, test->omitting?report_omitted:"");
                     }
@@ -3771,6 +3798,14 @@ iperf_print_results(struct iperf_test *test)
                                 if (test->verbose)
                                     iperf_printf(test, report_sender_not_available_format, sp->socket);
                             }
+#if defined(HAVE_SO_BINDTODEVICE)
+                        else if (test->bind_dev && test->num_streams == 1) {
+                            char dubuf[UNIT_LEN];
+                            char dnbuf[UNIT_LEN];
+                            device_unit_snprintf(test, sp->sender, sender_time, dubuf, dnbuf);
+                            iperf_printf(test, report_bw_format_dev, sp->socket, mbuf, start_time, sender_time, ubuf, nbuf, dubuf, dnbuf, report_sender);
+                        }
+#endif
                             else {
                                 iperf_printf(test, report_bw_format, sp->socket, mbuf, start_time, sender_time, ubuf, nbuf, report_sender);
                             }
@@ -3815,6 +3850,14 @@ iperf_print_results(struct iperf_test *test)
                             if (test->verbose)
                                 iperf_printf(test, report_sender_not_available_format, sp->socket);
                         }
+#if defined(HAVE_SO_BINDTODEVICE)
+                        else if (test->bind_dev && test->num_streams == 1) {
+                            char dubuf[UNIT_LEN];
+                            char dnbuf[UNIT_LEN];
+                            device_unit_snprintf(test, sp->sender, sender_time, dubuf, dnbuf);
+                            iperf_printf(test, report_bw_udp_format_dev, sp->socket, mbuf, start_time, sender_time, ubuf, nbuf, dubuf, dnbuf, 0.0, 0, (sender_packet_count - sender_omitted_packet_count), (double) 0, report_sender);
+                        }
+#endif
                         else {
                             iperf_printf(test, report_bw_udp_format, sp->socket, mbuf, start_time, sender_time, ubuf, nbuf, 0.0, 0, (sender_packet_count - sender_omitted_packet_count), (double) 0, report_sender);
                         }
@@ -3862,6 +3905,14 @@ iperf_print_results(struct iperf_test *test)
                             if (test->verbose)
                                 iperf_printf(test, report_receiver_not_available_format, sp->socket);
                         }
+#if defined(HAVE_SO_BINDTODEVICE)
+                        else if (test->bind_dev && test->num_streams == 1) {
+                            char dubuf[UNIT_LEN];
+                            char dnbuf[UNIT_LEN];
+                            device_unit_snprintf(test, sp->sender, sender_time, dubuf, dnbuf);
+                            iperf_printf(test, report_bw_format, sp->socket, mbuf, start_time, receiver_time, ubuf, nbuf, dubuf, dnbuf, report_receiver);
+                        }
+#endif
                         else {
                             iperf_printf(test, report_bw_format, sp->socket, mbuf, start_time, receiver_time, ubuf, nbuf, report_receiver);
                         }
@@ -3938,6 +3989,12 @@ iperf_print_results(struct iperf_test *test)
                             if (test->verbose)
                                 iperf_printf(test, report_sender_not_available_summary_format, "SUM");
                         }
+                        else if (test->bind_dev) {
+                            char dubuf[UNIT_LEN];
+                            char dnbuf[UNIT_LEN];
+                            device_unit_snprintf(test, stream_must_be_sender, sender_time, dubuf, dnbuf);
+                            iperf_printf(test, report_sum_bw_retrans_format_dev, mbuf, start_time, sender_time, ubuf, nbuf, dubuf, dnbuf, total_retransmits, report_sender);
+                        }
                         else {
                           iperf_printf(test, report_sum_bw_retrans_format, mbuf, start_time, sender_time, ubuf, nbuf, total_retransmits, report_sender);
                         }
@@ -3949,6 +4006,12 @@ iperf_print_results(struct iperf_test *test)
                         if (test->role == 's' && !stream_must_be_sender) {
                             if (test->verbose)
                                 iperf_printf(test, report_sender_not_available_summary_format, "SUM");
+                        }
+                        else if (test->bind_dev) {
+                            char dubuf[UNIT_LEN];
+                            char dnbuf[UNIT_LEN];
+                            device_unit_snprintf(test, stream_must_be_sender, sender_time, dubuf, dnbuf);
+                            iperf_printf(test, report_sum_bw_format, mbuf, start_time, sender_time, ubuf, nbuf, dubuf, dnbuf, report_sender);
                         }
                         else {
                             iperf_printf(test, report_sum_bw_format, mbuf, start_time, sender_time, ubuf, nbuf, report_sender);
@@ -3969,6 +4032,12 @@ iperf_print_results(struct iperf_test *test)
                     if (test->role == 's' && stream_must_be_sender) {
                         if (test->verbose)
                             iperf_printf(test, report_receiver_not_available_summary_format, "SUM");
+                    }
+                    else if (test->bind_dev) {
+                        char dubuf[UNIT_LEN];
+                        char dnbuf[UNIT_LEN];
+                        device_unit_snprintf(test, stream_must_be_sender, receiver_time, dubuf, dnbuf);
+                        iperf_printf(test, report_sum_bw_format, mbuf, start_time, sender_time, ubuf, nbuf, dubuf, dnbuf, report_receiver);
                     }
                     else {
                         iperf_printf(test, report_sum_bw_format, mbuf, start_time, receiver_time, ubuf, nbuf, report_receiver);
@@ -4105,6 +4174,9 @@ iperf_print_results(struct iperf_test *test)
 void
 iperf_reporter_callback(struct iperf_test *test)
 {
+#if defined(HAVE_SO_BINDTODEVICE)
+    iperf_update_device_stat(test);
+#endif
     switch (test->state) {
         case TEST_RUNNING:
         case STREAM_RUNNING:
@@ -4119,6 +4191,26 @@ iperf_reporter_callback(struct iperf_test *test)
     }
 
 }
+
+ void
+ iperf_update_device_stat(struct iperf_test * test)
+ {
+    iperf_size_t new_bytes, old_bytes;
+    new_bytes = iperf_device_bytes(test->bind_dev, 't', &old_bytes);
+
+    if (old_bytes == 0 || new_bytes < old_bytes) { /* first time update */
+        test->bytes_sent_on_device = 0;
+    } else {
+        test->bytes_sent_on_device = new_bytes - old_bytes;
+    }
+    
+    new_bytes = iperf_device_bytes(test->bind_dev, 'r', &old_bytes);
+    if (old_bytes == 0 || new_bytes < old_bytes) { /* first time update */
+        test->bytes_received_on_device = 0;
+    } else {
+        test->bytes_received_on_device = new_bytes - old_bytes;
+    }
+ }
 
 /**
  * Print the interval results for one stream.
@@ -4205,7 +4297,16 @@ print_interval_results(struct iperf_test *test, struct iperf_stream *sp, cJSON *
 	    /* Interval, TCP with retransmits. */
 	    if (test->json_output)
 		cJSON_AddItemToArray(json_interval_streams, iperf_json_printf("socket: %d  start: %f  end: %f  seconds: %f  bytes: %d  bits_per_second: %f  retransmits: %d  snd_cwnd:  %d  snd_wnd:  %d  rtt:  %d  rttvar: %d  pmtu: %d  omitted: %b sender: %b", (int64_t) sp->socket, (double) st, (double) et, (double) irp->interval_duration, (int64_t) irp->bytes_transferred, bandwidth * 8, (int64_t) irp->interval_retrans, (int64_t) irp->snd_cwnd, (int64_t) irp->snd_wnd, (int64_t) irp->rtt, (int64_t) irp->rttvar, (int64_t) irp->pmtu, irp->omitted, sp->sender));
-	    else {
+#if defined(HAVE_SO_BINDTODEVICE)
+        else if (test->bind_dev && test->num_streams == 1) {
+            char dubuf[UNIT_LEN];
+            char dnbuf[UNIT_LEN];
+            device_unit_snprintf(test, sp->sender, irp->interval_duration, dubuf, dnbuf);
+		    unit_snprintf(cbuf, UNIT_LEN, irp->snd_cwnd, 'A');
+		    iperf_printf(test, report_bw_retrans_cwnd_format_dev, sp->socket, mbuf, st, et, ubuf, nbuf, dubuf, dnbuf, irp->interval_retrans, cbuf, irp->omitted?report_omitted:"");
+        }
+#endif
+        else {
 		unit_snprintf(cbuf, UNIT_LEN, irp->snd_cwnd, 'A');
 		iperf_printf(test, report_bw_retrans_cwnd_format, sp->socket, mbuf, st, et, ubuf, nbuf, irp->interval_retrans, cbuf, irp->omitted?report_omitted:"");
 	    }
@@ -4213,7 +4314,15 @@ print_interval_results(struct iperf_test *test, struct iperf_stream *sp, cJSON *
 	    /* Interval, TCP without retransmits. */
 	    if (test->json_output)
 		cJSON_AddItemToArray(json_interval_streams, iperf_json_printf("socket: %d  start: %f  end: %f  seconds: %f  bytes: %d  bits_per_second: %f  omitted: %b sender: %b", (int64_t) sp->socket, (double) st, (double) et, (double) irp->interval_duration, (int64_t) irp->bytes_transferred, bandwidth * 8, irp->omitted, sp->sender));
-	    else
+#if defined(HAVE_SO_BINDTODEVICE)
+        else if (test->bind_dev && test->num_streams == 1) {
+            char dubuf[UNIT_LEN];
+            char dnbuf[UNIT_LEN];
+            device_unit_snprintf(test, sp->sender, irp->interval_duration, dubuf, dnbuf);
+		    iperf_printf(test, report_bw_format_dev, sp->socket, mbuf, st, et, ubuf, nbuf, dubuf, dnbuf, irp->omitted?report_omitted:"");
+        }
+#endif
+        else
 		iperf_printf(test, report_bw_format, sp->socket, mbuf, st, et, ubuf, nbuf, irp->omitted?report_omitted:"");
 	}
     } else {
@@ -4221,7 +4330,15 @@ print_interval_results(struct iperf_test *test, struct iperf_stream *sp, cJSON *
 	if (sp->sender) {
 	    if (test->json_output)
 		cJSON_AddItemToArray(json_interval_streams, iperf_json_printf("socket: %d  start: %f  end: %f  seconds: %f  bytes: %d  bits_per_second: %f  packets: %d  omitted: %b sender: %b", (int64_t) sp->socket, (double) st, (double) et, (double) irp->interval_duration, (int64_t) irp->bytes_transferred, bandwidth * 8, (int64_t) irp->interval_packet_count, irp->omitted, sp->sender));
-	    else
+#if defined(HAVE_SO_BINDTODEVICE)
+        else if (test->bind_dev && test->num_streams == 1) {
+            char dubuf[UNIT_LEN];
+            char dnbuf[UNIT_LEN];
+            device_unit_snprintf(test, sp->sender, irp->interval_duration, dubuf, dnbuf);
+		    iperf_printf(test, report_bw_format_dev, sp->socket, mbuf, st, et, ubuf, nbuf,  dubuf, dnbuf, zbuf, irp->interval_packet_count, irp->omitted?report_omitted:"");
+        }
+#endif
+        else
 		iperf_printf(test, report_bw_udp_sender_format, sp->socket, mbuf, st, et, ubuf, nbuf, zbuf, irp->interval_packet_count, irp->omitted?report_omitted:"");
 	} else {
 	    if (irp->interval_packet_count > 0) {
@@ -4232,7 +4349,15 @@ print_interval_results(struct iperf_test *test, struct iperf_stream *sp, cJSON *
 	    }
 	    if (test->json_output)
 		cJSON_AddItemToArray(json_interval_streams, iperf_json_printf("socket: %d  start: %f  end: %f  seconds: %f  bytes: %d  bits_per_second: %f  jitter_ms: %f  lost_packets: %d  packets: %d  lost_percent: %f  omitted: %b sender: %b", (int64_t) sp->socket, (double) st, (double) et, (double) irp->interval_duration, (int64_t) irp->bytes_transferred, bandwidth * 8, (double) irp->jitter * 1000.0, (int64_t) irp->interval_cnt_error, (int64_t) irp->interval_packet_count, (double) lost_percent, irp->omitted, sp->sender));
-	    else
+#if defined(HAVE_SO_BINDTODEVICE)
+        else if (test->bind_dev && test->num_streams == 1) {
+            char dubuf[UNIT_LEN];
+            char dnbuf[UNIT_LEN];
+            device_unit_snprintf(test, sp->sender, irp->interval_duration, dubuf, dnbuf);
+            iperf_printf(test, report_bw_udp_format_dev, sp->socket, mbuf, st, et, ubuf, nbuf, dubuf, dnbuf, irp->jitter * 1000.0, irp->interval_cnt_error, irp->interval_packet_count, lost_percent, irp->omitted?report_omitted:"");
+        }
+#endif
+        else
 		iperf_printf(test, report_bw_udp_format, sp->socket, mbuf, st, et, ubuf, nbuf, irp->jitter * 1000.0, irp->interval_cnt_error, irp->interval_packet_count, lost_percent, irp->omitted?report_omitted:"");
 	}
     }
@@ -4943,3 +5068,54 @@ iflush(struct iperf_test *test)
 {
     return fflush(test->outfile);
 }
+
+#if defined(HAVE_SO_BINDTODEVICE)
+static const char s_bytes_file[] = "/sys/class/net/%s/statistics/%cx_bytes";
+static iperf_size_t s_last_bytes[2] = {0, 0};  /* sent, received */
+
+inline void iperf_device_reset()
+{
+    memset(s_last_bytes, 0, sizeof(s_last_bytes));
+}
+
+inline void device_unit_snprintf(struct iperf_test *test, int sender, 
+    float interval, char* dubuf, char* dnbuf)
+{
+    iperf_size_t bytes = sender ? test->bytes_sent_on_device : test->bytes_received_on_device;
+    unit_snprintf(dubuf, UNIT_LEN, (double) (bytes), 'A');
+    double d_bw = (interval > 0.0) ? ((double) bytes / (double) interval) : 0.0;
+    unit_snprintf(dnbuf, UNIT_LEN, d_bw, test->settings->unit_format);
+}
+
+iperf_size_t
+iperf_device_bytes(char* dev_name, char dir, iperf_size_t* old)
+{
+    int fd;
+    char bytes[10];
+    char bytes_file[128];
+    iperf_size_t new_bytes;
+    iperf_size_t* temp;
+    snprintf(bytes_file, sizeof(bytes_file), s_bytes_file, dev_name, dir);
+
+    fd = open(bytes_file, O_RDONLY);
+    if (fd == -1) {
+        return 0;
+    }
+
+    if (read(fd, bytes, sizeof(bytes)) == -1) {
+        close(fd);
+        return 0;
+    }
+
+    new_bytes = (iperf_size_t)atoll(bytes);
+    temp = (dir == 't') ? &s_last_bytes[0] : &s_last_bytes[1];
+
+    if (old) {
+        *old = *temp;
+    }
+    *temp = new_bytes;
+
+    close(fd);
+    return new_bytes;
+}
+#endif

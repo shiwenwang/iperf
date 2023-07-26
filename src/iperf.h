@@ -358,6 +358,11 @@ struct iperf_test
     iperf_size_t bytes_received;
     iperf_size_t blocks_received;
 
+#if defined(HAVE_SO_BINDTODEVICE)
+    iperf_size_t bytes_sent_on_device;
+    iperf_size_t bytes_received_on_device;
+#endif
+
     iperf_size_t bitrate_limit_stats_count;               /* Number of stats periods accumulated for server's total bitrate average */
     iperf_size_t *bitrate_limit_intervals_traffic_bytes;  /* Pointer to a cyclic array that includes the last interval's bytes transferred */
     iperf_size_t bitrate_limit_last_interval_index;       /* Index of the last interval traffic inserted into the cyclic array */

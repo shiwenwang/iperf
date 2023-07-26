@@ -387,14 +387,23 @@ const char report_bw_udp_sender_header_bidir[] =
 const char report_bw_format[] =
 "[%3d]%s %6.2f-%-6.2f sec  %ss  %ss/sec                  %s\n";
 
+const char report_bw_format_dev[] =
+"[%3d]%s %6.2f-%-6.2f sec  %ss  %ss/sec  D-%ss  D-%ss/sec                  %s\n";
+
 const char report_bw_retrans_format[] =
 "[%3d]%s %6.2f-%-6.2f sec  %ss  %ss/sec  %3u             %s\n";
 
 const char report_bw_retrans_cwnd_format[] =
 "[%3d]%s %6.2f-%-6.2f sec  %ss  %ss/sec  %3u   %ss       %s\n";
 
+const char report_bw_retrans_cwnd_format_dev[] =
+"[%3d]%s %6.2f-%-6.2f sec  %ss  %ss/sec  D-%ss  D-%ss/sec  %3u   %ss       %s\n";
+
 const char report_bw_udp_format[] =
 "[%3d]%s %6.2f-%-6.2f sec  %ss  %ss/sec  %5.3f ms  %" PRIu64 "/%" PRIu64 " (%.2g%%)  %s\n";
+
+const char report_bw_udp_format_dev[] =
+"[%3d]%s %6.2f-%-6.2f sec  %ss  %ss/sec  D-%ss  D-%ss/sec  %5.3f ms  %" PRIu64 "/%" PRIu64 " (%.2g%%)  %s\n";
 
 const char report_bw_udp_format_no_omitted_error[] =
 "[%3d]%s %6.2f-%-6.2f sec  %ss  %ss/sec  %5.3f ms  Unknown/%" PRIu64 "  %s\n";
@@ -402,20 +411,35 @@ const char report_bw_udp_format_no_omitted_error[] =
 const char report_bw_udp_sender_format[] =
 "[%3d]%s %6.2f-%-6.2f sec  %ss  %ss/sec %s %" PRIu64 "  %s\n";
 
+const char report_bw_udp_sender_format_dev[] =
+"[%3d]%s %6.2f-%-6.2f sec  %ss  %ss/sec  D-%ss  D-%ss/sec %s %" PRIu64 "  %s\n";
+
 const char report_summary[] =
 "Test Complete. Summary Results:\n";
 
 const char report_sum_bw_format[] =
 "[SUM]%s %6.2f-%-6.2f sec  %ss  %ss/sec                  %s\n";
 
+const char report_sum_bw_format_dev[] =
+"[SUM]%s %6.2f-%-6.2f sec  %ss  D-%ss  D-%ss/sec  %ss/sec                  %s\n";
+
 const char report_sum_bw_retrans_format[] =
 "[SUM]%s %6.2f-%-6.2f sec  %ss  %ss/sec  %3d             %s\n";
+
+const char report_sum_bw_retrans_format_dev[] =
+"[SUM]%s %6.2f-%-6.2f sec  %ss  %ss/sec  D-%ss  D-%ss/sec  %3d             %s\n";
 
 const char report_sum_bw_udp_format[] =
 "[SUM]%s %6.2f-%-6.2f sec  %ss  %ss/sec  %5.3f ms  %" PRIu64 "/%" PRIu64 " (%.2g%%)  %s\n";
 
 const char report_sum_bw_udp_sender_format[] =
 "[SUM]%s %6.2f-%-6.2f sec  %ss  %ss/sec %s %" PRIu64 "  %s\n";
+
+const char report_sum_bw_udp_format_dev[] =
+"[SUM]%s %6.2f-%-6.2f sec  %ss  %ss/sec  D-%ss  D-%ss/sec  %5.3f ms  %" PRIu64 "/%" PRIu64 " (%.2g%%)  %s\n";
+
+const char report_sum_bw_udp_sender_format_dev[] =
+"[SUM]%s %6.2f-%-6.2f sec  %ss  %ss/sec  D-%ss  D-%ss/sec %s %" PRIu64 "  %s\n";
 
 const char report_omitted[] = "(omitted)";
 

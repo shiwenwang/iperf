@@ -244,6 +244,12 @@ void     iperf_stats_callback(struct iperf_test * test);
 void     iperf_reporter_callback(struct iperf_test * test);
 
 /**
+ * iperf_update_device_bytes -- handles the bytes statistic of network device
+ *
+ */
+ void    iperf_update_device_stat(struct iperf_test * test);
+
+/**
  * iperf_new_test -- return a new iperf_test with default values
  *
  * returns NULL on failure
@@ -364,6 +370,15 @@ int iflush(struct iperf_test *test);
 void iperf_err(struct iperf_test *test, const char *format, ...) __attribute__ ((format(printf,2,3)));
 void iperf_errexit(struct iperf_test *test, const char *format, ...) __attribute__ ((format(printf,2,3),noreturn));
 char *iperf_strerror(int);
+
+#if defined(HAVE_SO_BINDTODEVICE)
+void iperf_device_reset();
+void device_unit_snprintf(struct iperf_test *test, int sender, 
+    float interval, char* dubuf, char* dnbuf);
+/* Retrieve device transferred bytes */
+iperf_size_t iperf_device_bytes(char* dev_name, char dir, iperf_size_t* old);
+#endif
+
 extern int i_errno;
 enum {
     IENONE = 0,             // No error
